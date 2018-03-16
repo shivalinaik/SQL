@@ -1,0 +1,158 @@
+CREATE TABLE UserRoles(
+user_typeId INT NOT NULL PRIMARY KEY,
+user_type_Desc VARCHAR(25) NOT NULL,
+);
+INSERT INTO UserRoles values(01,'Admin');
+INSERT INTO UserRoles values(02,'Seller');
+INSERT INTO UserRoles values(03,'Buyer');
+SELECT * from UserRoles;
+
+
+CREATE TABLE Admin(
+user_id INT NOT NULL PRIMARY KEY,
+user_typeId INT NOT NULL,
+user_firstname VARCHAR(25) NOT NULL,
+user_lastname VARCHAR(25) NOT NULL,
+user_email VARCHAR(25) NOT NULL,
+FOREIGN KEY (user_typeId) REFERENCES UserRoles(user_typeId),
+);
+
+INSERT INTO Admin values(111,01,'Shivali','Naik','shnaik@syr.edu');
+INSERT INTO Admin values(001,01,'Anjali','Naik','aik@syr.edu');
+SELECT * FROM Admin;
+
+CREATE TABLE Seller(
+user_id INT NOT NULL PRIMARY KEY ,
+user_typeId INT NOT NULL,
+user_created_by_Id INT NOT NULL,
+user_firstname VARCHAR(25) NOT NULL,
+user_lastname VARCHAR(25) NOT NULL,
+user_email VARCHAR(25) NOT NULL,
+FOREIGN KEY (user_typeId) REFERENCES UserRoles(user_typeID),
+FOREIGN KEY (user_created_by_Id) REFERENCES Admin(user_id),
+);
+
+INSERT INTO Seller values(112,02,111,'Loukik','Naik','lnaik@syr.edu');
+SELECT * FROM Buyer;
+CREATE TABLE Buyer(
+user_id INT NOT NULL PRIMARY KEY ,
+user_typeId INT NOT NULL,
+user_created_by_Id INT NOT NULL,
+user_firstname VARCHAR(25) NOT NULL,
+user_lastname VARCHAR(25) NOT NULL,
+user_email VARCHAR(25) NOT NULL,
+FOREIGN KEY (user_typeId) REFERENCES UserRoles(user_typeID),
+FOREIGN KEY (user_created_by_Id) REFERENCES Admin(user_id),
+);
+
+INSERT INTO Buyer values(113,03,1,'Ashok','Naik','anaik@syr.edu');
+SELECT * from Buyer;
+
+CREATE TABLE SellerRecord(
+record_id INT NOT NULL PRIMARY KEY,
+user_id INT NOT NULL,
+FOREIGN KEY (user_id) REFERENCES Seller(user_id),
+);
+
+INSERT INTO SellerRecord VALUES (1001,112);
+DROP TABLE Product;
+CREATE TABLE Product(
+product_id INT NOT NULL PRIMARY KEY,
+title VARCHAR(25),
+price INT NOT NULL,
+sold VARCHAR(1) NOT NULL CHECK (sold IN('y','n')), 
+);
+
+Drop table BP;
+INSERT INTO Product VALUES (11,'iPhone6',1000,'y');
+INSERT INTO Product VALUES (12,'Samsung',345,'n');
+INSERT INTO Product VALUES (13,'House',500,'n');
+INSERT INTO Product VALUES (14,'Books',600,'n');
+CREATE TABLE SP(
+spid INT NOT NULL PRIMARY KEY,
+product_id INT NOT NULL,
+record_id INT NOT NULL,
+FOREIGN KEY (record_id) REFERENCES SellerRecord(record_id),
+FOREIGN KEY (product_id) REFERENCES Product(product_id),
+);
+
+INSERT INTO SP VALUES(1,11,1001);
+INSERT INTO SP VALUES(2,12,1001);
+CREATE TABLE BuyerRecord(
+b_record_id INT NOT NULL PRIMARY KEY,
+user_id INT NOT NULL,
+FOREIGN KEY (user_id) REFERENCES Buyer(user_id),
+);
+
+INSERT INTO BuyerRecord VALUES(1111,113);
+
+CREATE TABLE BP(
+bpid INT NOT NULL PRIMARY KEY,
+product_id INT NOT NULL,
+b_record_id INT NOT NULL,
+FOREIGN KEY (b_record_id) REFERENCES BuyerRecord(b_record_id),
+FOREIGN KEY (product_id) REFERENCES Product(product_id),
+);
+
+
+INSERT INTO BP VALUES(1,22,1111);
+
+CREATE TRIGGER UpdateProduct 
+ON BP
+FOR INSERT, UPDATE 
+AS 
+IF @@ROWCOUNT>=1 
+BEGIN 
+UPDATE Product 
+SET sold='y'
+FROM
+(SELECT p.product_id 
+FROM BP b INNER JOIN Product p
+ON b.product_id= p.product_id) AS updatetable
+WHERE Product.product_id = updatetable.product_id
+END;
+
+
+SELECT * FROM Product;
+
+
+
+
+Drop table UserLogin;
+SELECT * FROM Product;
+SELECT *
+FROM
+
+/* No of products sold by particular seller*/
+SELECT sr.user_id,count(SP.spid) AS No_of_Products
+FROM SellerRecord sr INNER JOIN SP 
+ON sr.record_id = SP.record_id
+GROUP BY(sr.user_id);
+
+SELECT * FROM Buyer;
+/* Total cost of buyer cart*/
+
+SELECT br.user_id,SUM(p.price) AS Total_Pay
+FROM BuyerRecord br INNER JOIN BP ON br.b_record_id=BP.b_record_id
+INNER JOIN Product p ON BP.product_id=p.product_id
+GROUP BY br.user_id;
+
+/* Buyer bought from which Seller */
+SELECT DISTINCT b.user_id,b.user_firstname,s.user_id,s.user_firstname
+FROM Buyer b INNER JOIN BuyerRecord br ON b.user_id=br.user_id INNER JOIN
+ BP ON br.b_record_id=BP.b_record_id INNER JOIN SP ON SP.product_id=BP.product_id INNER JOIN
+  SellerRecord sr ON sr.record_id=SP.record_id INNER JOIN Seller s ON s.user_id=sr.user_id
+;
+
+/* Products sold*/
+SELECT COUNT(product_id)No_of_products_sold
+FROM Product
+WHERE sold='y'
+GROUP BY sold;
+
+SELECT * FROM Seller;
+
+SELECT * FROM SP;
+
+SELECT * FROM SellerRecord;
+SELECT * FROM BuyerRecord;
